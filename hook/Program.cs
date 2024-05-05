@@ -26,6 +26,10 @@ if (radarr_download_client != null
     sendHashToDeleteToService(radarr_download_id.ToUpper());
 }
 
+foreach(var hash in args) {
+    sendHashToDeleteToService(hash.ToUpper());
+}
+
 static void sendHashToDeleteToService(string hash) {
     var pipeClient = new NamedPipeClientStream(".", "transmission-autoclean", PipeDirection.Out);
 

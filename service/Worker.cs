@@ -1,5 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipes;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using Transmission.API.RPC;
 using Transmission.API.RPC.Entity;
 
@@ -18,8 +20,18 @@ namespace service {
         protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
             LogInformation("Service Started");
 
+            var everyone = new SecurityIdentifier(WellKnownSidType.WorldSid, null);
+            PipeAccessRule allowEveryone = new(
+                everyone,
+                PipeAccessRights.FullControl,
+                AccessControlType.Allow
+            );
+
+            var pipeSecurity = new PipeSecurity();
+            pipeSecurity.SetAccessRule(allowEveryone);
+
             while (!stoppingToken.IsCancellationRequested) {
-                using (var pipeServer = new NamedPipeServerStream("transmission-autoclean", PipeDirection.In)) {
+                using (var pipeServer = NamedPipeServerStreamAcl.Create("transmission-autoclean", PipeDirection.In, 1, PipeTransmissionMode.Message, PipeOptions.None, 65535, 65535, pipeSecurity)) {
                     LogInformation("Wait for a new client");
 
                     await pipeServer.WaitForConnectionAsync(stoppingToken);
